@@ -7,16 +7,28 @@ from pydantic import BaseModel, Field
 # --- Enums ---
 
 class Priority(str, Enum):
-    # TODO: Define High, Medium, Low
-    pass
+    P0_CRITICAL = "P0"
+    P1_HIGH = "P1"
+    P2_MEDIUM = "P2"
+    P3_LOW = "P3"
+    P4_OPTIONAL = "P4"
 
 class TaskCategory(str, Enum):
-    # TODO: Define categories (Deep Work, Admin, Research, Meeting, Break, Other)
-    pass
+    DEEP_WORK = "Deep Work"
+    ADMIN = "Admin"
+    RESEARCH = "Research"
+    MEETING = "Meeting"
+    BREAK = "Break"
+    LEARNING = "Learning"
+    OTHER = "Other"
 
 class TaskStatus(str, Enum):
-    # TODO: Define statuses (Pending, Scheduled, Completed, RolledOver)
-    pass
+    PENDING = "Pending"
+    SCHEDULED = "Scheduled"
+    COMPLETED = "Completed"
+    ROLLED_OVER = "Rolled Over"
+    IN_PROGRESS = "In Progress"
+    CANCELLED = "Cancelled"
 
 class ConstraintType(str, Enum):
     HARD = "Hard"
@@ -38,9 +50,8 @@ class Task(BaseModel):
     title: str
     duration_minutes: int = Field(gt=0, description="Estimated duration in minutes")
     
-    # TODO: Add Priority and Category fields
-    # priority: Priority = ...
-    # category: TaskCategory = ...
+    priority: Priority = Priority.P2_MEDIUM
+    category: TaskCategory = TaskCategory.OTHER
     
     constraint_type: ConstraintType = ConstraintType.SOFT
     
@@ -48,22 +59,28 @@ class Task(BaseModel):
     preferred_time_windows: List[TimeRange] = Field(default_factory=list)
     deadline: Optional[datetime] = None
     
-    # status: TaskStatus = ...
+    status: TaskStatus = TaskStatus.PENDING
     
     @property
     def priority_score(self) -> int:
-        """Numeric score for the solver based on Priority Enum."""
-        # TODO: Implement mapping logic
-        return 0
+        """Numeric score for the solver based on Priority Enum. Higher is more important."""
+        scores = {
+            Priority.P0_CRITICAL: 100,
+            Priority.P1_HIGH: 50,
+            Priority.P2_MEDIUM: 25,
+            Priority.P3_LOW: 10,
+            Priority.P4_OPTIONAL: 1
+        }
+        return scores.get(self.priority, 1)
 
 class ScheduleConstraint(BaseModel):
     """
     Global constraints for the scheduler (Work bounds, buffers, etc.)
     """
-    # TODO: Define standard working hours and buffers
-    # work_start_hour: int = 8
-    # work_end_hour: int = 22
-    pass
+    work_start_hour: int = 8
+    work_end_hour: int = 22
+    buffer_minutes: int = 15
+    max_deep_work_block_minutes: int = 90
 
 class TimeSlot(BaseModel):
     """A scheduled block of time."""
@@ -71,12 +88,14 @@ class TimeSlot(BaseModel):
     end_time: datetime
     task_id: Optional[UUID] = None
     description: str
+    category: TaskCategory = TaskCategory.OTHER
 
 class ScheduleState(BaseModel):
     """
     Represents the state of a specific day or schedule window.
     """
     date_val: date
-    # available_slots: List[TimeRange] = [] 
-    # scheduled_tasks: List[TimeSlot] = []
-    # pending_tasks: List[Task] = []
+    available_slots: List[TimeRange] = Field(default_factory=list) 
+    scheduled_tasks: List[TimeSlot] = Field(default_factory=list)
+    pending_tasks: List[Task] = Field(default_factory=list)
+
