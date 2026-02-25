@@ -28,3 +28,10 @@ venv/
 # Google Calendar API Credentials
 credentials.json
 token.json
+
+# Personal planning docs
+new_features.md
+product_requirements.md
+
+# Runtime state
+daily_state.json

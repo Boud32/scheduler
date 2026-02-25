@@ -2,15 +2,18 @@ import os
 import json
 import datetime
 from typing import List
-import google.generativeai as genai
+from google import genai
 from scheduler.models import Task, Priority, TaskCategory
 
 # Configure API Key
 # Best practice: User should set GEMINI_API_KEY in their shell or .env
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+# Client initialization will happen where needed or we can initialize a global one differently if we want, 
+# but for this script structure, we'll verify key existence and init client later.
+if not GEMINI_API_KEY:
+    # We might want to warn or just let it fail later, but the original code had a check.
+    pass
 
 def parse_user_input(text_input: str, reference_date: datetime.date = datetime.date.today()) -> List[Task]:
     """
@@ -19,7 +22,7 @@ def parse_user_input(text_input: str, reference_date: datetime.date = datetime.d
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY environment variable not set.")
 
-    model = genai.GenerativeModel('gemini-flash-latest')
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""
     You are an intelligent scheduling assistant. 
@@ -47,7 +50,10 @@ def parse_user_input(text_input: str, reference_date: datetime.date = datetime.d
     """
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
         # Clean potential markdown code blocks
         clean_text = response.text.strip()
         if clean_text.startswith("```json"):

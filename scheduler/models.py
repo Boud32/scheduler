@@ -77,8 +77,8 @@ class ScheduleConstraint(BaseModel):
     """
     Global constraints for the scheduler (Work bounds, buffers, etc.)
     """
-    work_start_hour: int = 8
-    work_end_hour: int = 22
+    work_start_hour: int = 5
+    work_end_hour: int = 24
     buffer_minutes: int = 15
     max_deep_work_block_minutes: int = 90
 

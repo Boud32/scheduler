@@ -1,15 +1,41 @@
 import datetime
 from datetime import date, timedelta
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 # Ensure we can import from local package
 import os
 sys.path.append(os.getcwd())
 
-from scheduler import ai, gcal, solver, models
+from scheduler import ai, gcal, solver, models, tracker
+
+
+def get_input(prompt):
+    while True:
+        try:
+            val = input(prompt).strip()
+            if val:
+                return val
+            print("Input cannot be empty. Please try again.")
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
+            exit(0)
+
 
 def run_scheduler_loop():
     print("🤖 --- AI Accountability Scheduler --- 🤖")
+    print("\n[1] Schedule tasks    [2] Recruitment Tracker")
+    try:
+        mode = input("Select mode: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print("\nExiting.")
+        return
+
+    if mode == "2":
+        tracker.run_tracker()
+        return
     
     # 1. Scope: Today
     today = date.today()
@@ -31,14 +57,7 @@ def run_scheduler_loop():
 
     # 3. User Input
     print("\n💬 What do you want to accomplish today?")
-    try:
-        user_input = input("   (e.g., 'Draft project proposal for 2 hours'): ")
-    except KeyboardInterrupt:
-        return
-
-    if not user_input.strip():
-        print("👋 Exiting.")
-        return
+    user_input = get_input("   (e.g., 'Draft project proposal for 2 hours'): ")
 
     # 4. AI Parse
     print("\n🧠 Analyzing your request...")
@@ -59,10 +78,10 @@ def run_scheduler_loop():
 
     # 5. Solve
     print("\n🧩 Optimizing schedule...")
-    # Default work hours: 07:00 to 22:00 for flexibility
+    # Default work hours: 05:00 to 24:00 (Midnight)
     constraint = models.ScheduleConstraint(
-        work_start_hour=7, 
-        work_end_hour=22
+        work_start_hour=5, 
+        work_end_hour=24
     )
     sched = solver.AppointmentScheduler(today, constraint)
     
@@ -124,10 +143,11 @@ def run_scheduler_loop():
     # 7. Push to GCal
     if schedule_state.scheduled_tasks:
         try:
-            confirm = input("\n🚀 Push to Google Calendar? (y/N): ")
-        except KeyboardInterrupt:
+            confirm = input("\n🚀 Push to Google Calendar? (y/N): ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
             return
-            
+
         if confirm.lower() == 'y':
             print("   Uploading...")
             count = 0

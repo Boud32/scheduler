@@ -76,6 +76,42 @@ def list_events(limit: int = 10, time_min: Optional[datetime.datetime] = None, t
 
     return events
 
+def create_tracker_event(date) -> str:
+    """Creates a recruiting tracker event at 18:00-18:30 on the given date."""
+    service = get_service()
+
+    start_time = datetime.datetime.combine(date, datetime.time(18, 0)).astimezone()
+    end_time = datetime.datetime.combine(date, datetime.time(18, 30)).astimezone()
+
+    event = {
+        'summary': '🎯 Recruiting Tracker',
+        'colorId': '11',
+        'start': {'dateTime': start_time.isoformat()},
+        'end': {'dateTime': end_time.isoformat()},
+    }
+
+    try:
+        result = service.events().insert(calendarId='primary', body=event).execute()
+        print(f"Tracker event created: {result.get('htmlLink')}")
+        return result['id']
+    except HttpError as error:
+        print(f"An error occurred creating tracker event: {error}")
+        return None
+
+
+def update_event_color(service, calendar_id: str, event_id: str, color_id: str):
+    """Patches only the colorId field of an existing event."""
+    try:
+        service.events().patch(
+            calendarId=calendar_id,
+            eventId=event_id,
+            body={'colorId': color_id}
+        ).execute()
+        print(f"Event color updated to colorId={color_id}")
+    except HttpError as error:
+        print(f"Failed to update event color: {error}")
+
+
 def create_event(summary: str, start_time: datetime.datetime, end_time: datetime.datetime, description: str = ""):
     """Creates an event in the calendar."""
     service = get_service()
