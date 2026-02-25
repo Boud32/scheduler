@@ -56,8 +56,16 @@ def run_scheduler_loop():
         return
 
     # 3. User Input
-    print("\n💬 What do you want to accomplish today?")
-    user_input = get_input("   (e.g., 'Draft project proposal for 2 hours'): ")
+    print("\n💬 What do you want to accomplish today? (Enter to exit)")
+    try:
+        user_input = input("   (e.g., 'Draft project proposal for 2 hours'): ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print("\nExiting.")
+        return
+
+    if not user_input or user_input.lower() in ("q", "quit", "exit", "nothing", "n"):
+        print("👋 Exiting.")
+        return
 
     # 4. AI Parse
     print("\n🧠 Analyzing your request...")

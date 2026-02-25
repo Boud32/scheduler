@@ -3,6 +3,7 @@ import datetime
 from typing import List, Optional
 
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -26,8 +27,13 @@ def get_service():
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                print("⚠️  Saved token is invalid or revoked. Re-authenticating...")
+                os.remove(TOKEN_FILE)
+                creds = None
+        if not creds or not creds.valid:
             if not os.path.exists(CREDS_FILE):
                 raise FileNotFoundError(f"Missing {CREDS_FILE}. Please download OAuth client ID from Google Cloud Console.")
             
@@ -77,17 +83,16 @@ def list_events(limit: int = 10, time_min: Optional[datetime.datetime] = None, t
     return events
 
 def create_tracker_event(date) -> str:
-    """Creates a recruiting tracker event at 18:00-18:30 on the given date."""
+    """Creates an all-day recruiting tracker event on the given date."""
     service = get_service()
 
-    start_time = datetime.datetime.combine(date, datetime.time(18, 0)).astimezone()
-    end_time = datetime.datetime.combine(date, datetime.time(18, 30)).astimezone()
+    next_day = (date + datetime.timedelta(days=1)).isoformat()
 
     event = {
         'summary': '🎯 Recruiting Tracker',
         'colorId': '11',
-        'start': {'dateTime': start_time.isoformat()},
-        'end': {'dateTime': end_time.isoformat()},
+        'start': {'date': date.isoformat()},
+        'end': {'date': next_day},
     }
 
     try:
