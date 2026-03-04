@@ -10,21 +10,21 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ["https://www.googleapis.com/auth/calendar"]
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/drive",
+]
 
 CREDS_FILE = "credentials.json"
 TOKEN_FILE = "token.json"
 
-def get_service():
-    """Shows basic usage of the Google Calendar API."""
+
+def get_creds():
+    """Returns valid OAuth credentials, refreshing or re-authenticating as needed."""
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
     if os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-    
-    # If there are no (valid) credentials available, let the user log in.
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             try:
@@ -36,18 +36,23 @@ def get_service():
         if not creds or not creds.valid:
             if not os.path.exists(CREDS_FILE):
                 raise FileNotFoundError(f"Missing {CREDS_FILE}. Please download OAuth client ID from Google Cloud Console.")
-            
-            flow = InstalledAppFlow.from_client_secrets_file(
-                CREDS_FILE, SCOPES
-            )
+            flow = InstalledAppFlow.from_client_secrets_file(CREDS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
-        
-        # Save the credentials for the next run
+
         with open(TOKEN_FILE, "w") as token:
             token.write(creds.to_json())
 
-    service = build("calendar", "v3", credentials=creds)
-    return service
+    return creds
+
+
+def get_service():
+    """Returns an authenticated Google Calendar service."""
+    return build("calendar", "v3", credentials=get_creds())
+
+
+def get_drive_service():
+    """Returns an authenticated Google Drive service."""
+    return build("drive", "v3", credentials=get_creds())
 
 def list_events(limit: int = 10, time_min: Optional[datetime.datetime] = None, time_max: Optional[datetime.datetime] = None):
     """Prints the start and name of the next 'limit' events on the user's calendar."""

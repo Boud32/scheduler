@@ -8,11 +8,12 @@ A command-line tool that combines AI-powered task parsing with Google Calendar i
 Describe what you want to accomplish in plain English. The tool uses an LLM to parse your input into structured tasks, then uses a constraint solver (Google OR-Tools) to fit them into your available calendar gaps — respecting existing meetings and configurable work hours.
 
 ### Recruitment Tracker
-A daily progress tracker that creates a Google Calendar event whose color updates in real time as you complete structured work blocks throughout the day.
+A daily progress tracker that creates an all-day Google Calendar event whose color updates in real time as you complete structured work blocks throughout the day.
 
 - State persists across multiple runs so you can check in without losing progress
 - Visual progress bar rendered in the terminal via Rich
 - Calendar event color reflects completion percentage (Red → Yellow → Blue → Green)
+- Expired or revoked Google auth tokens are detected and refreshed automatically
 
 ## How It Works
 
@@ -34,7 +35,7 @@ pip install -r requirements.txt
 ```
 
 ### Google Calendar Auth
-On first run, a browser window will open for OAuth consent. A `token.json` file will be saved locally for subsequent runs.
+On first run, a browser window will open for OAuth consent. A `token.json` file will be saved locally for subsequent runs. If the token expires or is revoked, it is deleted automatically and the OAuth flow re-runs on the next launch.
 
 ### Environment Variables
 Create a `.env` file in the project root:
@@ -49,8 +50,8 @@ python -m scheduler.main
 ```
 
 You will be prompted to choose a mode:
-- **[1] Schedule tasks** — describe your tasks in plain English and get a proposed schedule
-- **[2] Recruitment Tracker** — check off structured work blocks and sync progress to your calendar
+- **[1] Schedule tasks** — describe your tasks in plain English and get a proposed schedule; press Enter with no input to exit
+- **[2] Recruitment Tracker** — check off structured work blocks and sync progress to your calendar as an all-day event
 
 ## Project Structure
 

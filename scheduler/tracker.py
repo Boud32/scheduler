@@ -11,9 +11,11 @@ from scheduler import gcal
 STATE_FILE = "daily_state.json"
 
 RECRUITING_BLOCKS = {
-    "block_1_applications": {"name": "Application Block",     "weight": 50},
-    "block_2_execution":    {"name": "LeetCode & Networking", "weight": 30},
-    "block_3_system_design":{"name": "DDIA / System Design",  "weight": 20},
+    "block_1_applications": {"name": "Applications",      "weight": 40},
+    "block_2_leetcode":     {"name": "LeetCode",          "weight": 20},
+    "block_3_networking":   {"name": "Networking",        "weight": 15},
+    "block_4_ddia":         {"name": "DDIA / System Design", "weight": 15},
+    "block_5_hackernews":   {"name": "Hacker News",       "weight": 10},
 }
 
 console = Console()
@@ -30,6 +32,17 @@ def get_color_id(progress: int) -> str:
         return "11"   # Red
 
 
+def _progress_color(progress: int) -> str:
+    if progress >= 100:
+        return "green"
+    elif progress >= 80:
+        return "blue"
+    elif progress >= 50:
+        return "yellow"
+    else:
+        return "red"
+
+
 def load_or_create_state() -> dict:
     today = datetime.date.today().isoformat()
     path = Path(STATE_FILE)
@@ -40,7 +53,6 @@ def load_or_create_state() -> dict:
         if state.get("date") == today:
             return state
 
-    # Fresh state
     state = {
         "date": today,
         "calendar_event_id": None,
@@ -64,24 +76,22 @@ def calculate_progress(state: dict) -> int:
 
 
 def _print_progress(progress: int):
-    color = "red" if progress < 50 else ("yellow" if progress < 80 else ("blue" if progress < 100 else "green"))
+    color = _progress_color(progress)
     console.print(f"\n[bold]Recruiting Progress:[/bold] [{color}]{progress}%[/{color}]")
     with Progress(
         TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
+        BarColumn(complete_style=color),
         TextColumn("{task.percentage:.0f}%"),
         console=console,
         transient=False,
     ) as bar:
-        task = bar.add_task("Progress", total=100, completed=progress)
-        _ = task  # keep reference
+        bar.add_task("Progress", total=100, completed=progress)
 
 
 def run_tracker():
     today = datetime.date.today()
     state = load_or_create_state()
 
-    # Create GCal event if this is the first run today
     if state["calendar_event_id"] is None:
         event_id = gcal.create_tracker_event(today)
         if event_id:

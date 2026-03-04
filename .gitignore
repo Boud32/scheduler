@@ -25,13 +25,12 @@ wheels/
 venv/
 .env
 
-# Google Calendar API Credentials
-credentials.json
-token.json
+# JSON files (credentials, tokens, runtime state)
+*.json
 
 # Personal planning docs
 new_features.md
 product_requirements.md
 
-# Runtime state
-daily_state.json
+# Local launch script (contains hardcoded paths)
+launch.command

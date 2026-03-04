@@ -52,7 +52,8 @@ class Task(BaseModel):
     
     priority: Priority = Priority.P2_MEDIUM
     category: TaskCategory = TaskCategory.OTHER
-    
+    target_date: Optional[date] = None
+
     constraint_type: ConstraintType = ConstraintType.SOFT
     
     # Optional constraints

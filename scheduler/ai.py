@@ -25,11 +25,12 @@ def parse_user_input(text_input: str, reference_date: datetime.date = datetime.d
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""
-    You are an intelligent scheduling assistant. 
+    You are an intelligent scheduling assistant.
+    Today's date is {reference_date.isoformat()} ({reference_date.strftime('%A, %B %d, %Y')}).
     Transform the following user request into a JSON list of tasks.
-    
+
     User Request: "{text_input}"
-    
+
     Output Format (JSON List):
     [
       {{
@@ -37,14 +38,17 @@ def parse_user_input(text_input: str, reference_date: datetime.date = datetime.d
         "duration_minutes": 60,
         "priority": "P0" | "P1" | "P2" | "P3" | "P4",
         "category": "Deep Work" | "Admin" | "Research" | "Meeting" | "Break" | "Learning" | "Other",
-        "specific_start_time": "HH:MM" // Optional: 24h format if user specifies EXACT start time (e.g., "at 6pm" -> "18:00")
+        "target_date": "YYYY-MM-DD",
+        "specific_start_time": "HH:MM"
       }}
     ]
-    
+
     Rules:
     - Default duration: 30 minutes if not specified.
     - Default priority: P2 (Medium) if not obvious.
     - Default category: Other.
+    - target_date: ALWAYS include this field. Resolve relative references ("today", "tomorrow", "this Saturday", "next Monday") to an ISO date relative to today ({reference_date.isoformat()}). If no date is mentioned, use today: {reference_date.isoformat()}.
+    - specific_start_time: 24h format if user specifies an exact start time (e.g. "at 6pm" -> "18:00"). Omit if not specified.
     - If user says "from X to Y", calculate duration and set specific_start_time.
     - STRICTLY return only valid JSON. No markdown formatting.
     """
@@ -86,27 +90,34 @@ def parse_user_input(text_input: str, reference_date: datetime.date = datetime.d
                 "Other": TaskCategory.OTHER
             }
 
+            # Resolve target_date
+            target_date = reference_date
+            date_str = item.get("target_date")
+            if date_str:
+                try:
+                    target_date = datetime.date.fromisoformat(date_str)
+                except Exception:
+                    pass
+
             task = Task(
                 title=item.get("title", "Untitled Task"),
                 duration_minutes=item.get("duration_minutes", 30),
                 priority=p_map.get(item.get("priority"), Priority.P2_MEDIUM),
-                category=c_map.get(item.get("category"), TaskCategory.OTHER)
+                category=c_map.get(item.get("category"), TaskCategory.OTHER),
+                target_date=target_date,
             )
-            
+
             # Handle specific time constraint
             start_str = item.get("specific_start_time")
             if start_str:
                 try:
-                    # Parse HH:MM
                     h, m = map(int, start_str.split(':'))
-                    # Create datetime for reference date
-                    start_dt = datetime.datetime.combine(reference_date, datetime.time(h, m))
+                    start_dt = datetime.datetime.combine(target_date, datetime.time(h, m))
                     end_dt = start_dt + datetime.timedelta(minutes=task.duration_minutes)
-                    
-                    # Add to preferrred windows
+
                     from scheduler.models import TimeRange, ConstraintType
                     task.preferred_time_windows = [TimeRange(start_time=start_dt, end_time=end_dt)]
-                    task.constraint_type = ConstraintType.HARD # Treat as hard constraint
+                    task.constraint_type = ConstraintType.HARD
                 except Exception as time_err:
                     print(f"Warning: could not parse specific time '{start_str}': {time_err}")
             
