@@ -25,54 +25,70 @@ def get_input(prompt):
             exit(0)
 
 
+def _prompt_continue() -> bool:
+    """Returns True to loop back to main menu, False to exit."""
+    print("\n" + "─" * 40)
+    try:
+        choice = input("[r] Return to main menu    [q] Quit\nChoice: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print("\nExiting.")
+        return False
+    return choice == "r"
+
+
 def run_scheduler_loop():
-    print("🤖 --- AI Accountability Scheduler --- 🤖")
-    print("\n[1] Schedule tasks    [2] Recruitment Tracker    [3] Daily Journal")
-    try:
-        mode = input("Select mode: ").strip()
-    except (KeyboardInterrupt, EOFError):
-        print("\nExiting.")
-        return
-
-    if mode == "2":
-        tracker.run_tracker()
-        return
-
-    if mode == "3":
-        journal.run_journal()
-        return
-    
-    today = date.today()
-
-    # 1. User Input
-    print("\n💬 What do you want to accomplish? (Enter to exit)")
-    try:
-        user_input = input("   (e.g., 'Volleyball 7-9am this Saturday, deep work 2hrs today'): ").strip()
-    except (KeyboardInterrupt, EOFError):
-        print("\nExiting.")
-        return
-
-    if not user_input or user_input.lower() in ("q", "quit", "exit", "nothing", "n"):
-        print("👋 Exiting.")
-        return
-
-    # 2. AI Parse
-    print("\n🧠 Analyzing your request...")
-    try:
-        tasks = ai.parse_user_input(user_input, reference_date=today)
-        if not tasks:
-            print("🤔 Could not understand tasks. Please try again.")
+    while True:
+        print("\n🤖 --- AI Accountability Scheduler --- 🤖")
+        print("[1] Schedule tasks    [2] Recruitment Tracker    [3] Daily Journal")
+        try:
+            mode = input("Select mode: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
             return
 
-        print(f"   Parsed {len(tasks)} tasks:")
-        for t in tasks:
-            priority_icon = "🔴" if "CRITICAL" in t.priority.name else "🔵"
-            date_label = t.target_date.strftime("%a %b %d") if t.target_date and t.target_date != today else "today"
-            print(f"   - {priority_icon} {t.title} ({t.duration_minutes}m) [{t.category.value}] → {date_label}")
+        if mode == "2":
+            tracker.run_tracker()
+            if not _prompt_continue():
+                return
+            continue
 
-    except Exception as e:
-        print(f"❌ Error parsing input: {e}")
-        return
+        if mode == "3":
+            journal.run_journal()
+            if not _prompt_continue():
+                return
+            continue
+
+        today = date.today()
+
+        # 1. User Input
+        print("\n💬 What do you want to accomplish? (Enter to exit)")
+        try:
+            user_input = input("   (e.g., 'Volleyball 7-9am this Saturday, deep work 2hrs today'): ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
+            return
+
+        if not user_input or user_input.lower() in ("q", "quit", "exit", "nothing", "n"):
+            print("👋 Exiting.")
+            continue
+
+        # 2. AI Parse
+        print("\n🧠 Analyzing your request...")
+        try:
+            tasks = ai.parse_user_input(user_input, reference_date=today)
+            if not tasks:
+                print("🤔 Could not understand tasks. Please try again.")
+                continue
+
+            print(f"   Parsed {len(tasks)} tasks:")
+            for t in tasks:
+                priority_icon = "🔴" if "CRITICAL" in t.priority.name else "🔵"
+                date_label = t.target_date.strftime("%a %b %d") if t.target_date and t.target_date != today else "today"
+                print(f"   - {priority_icon} {t.title} ({t.duration_minutes}m) [{t.category.value}] → {date_label}")
+
+        except Exception as e:
+            print(f"❌ Error parsing input: {e}")
+            continue
 
     # 3. Group tasks by target date
     tasks_by_date = defaultdict(list)
@@ -161,6 +177,9 @@ def run_scheduler_loop():
             print(f"   ✅ Done! {count} events created.")
         else:
             print("   Cancelled.")
+
+        if not _prompt_continue():
+            return
 
 if __name__ == "__main__":
     run_scheduler_loop()

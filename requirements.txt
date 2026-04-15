@@ -6,3 +6,4 @@ ortools
 google-genai
 pytest
 rich
+python-dotenv
