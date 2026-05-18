@@ -1,0 +1,27 @@
+[project]
+name = "scheduler"
+version = "0.1.0"
+description = "AI Accountability Scheduler: AI task parsing + Google Calendar + OR-Tools constraint solver"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0.0",
+    "google-api-python-client",
+    "google-auth-oauthlib",
+    "google-auth-httplib2",
+    "ortools",
+    "google-genai",
+    "rich",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scheduler"]
